@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import calendar
 import os
 
-BOT_TOKEN = os.getenv("7412805911:AAEVrkGNPNMgae3CXSCeeI36Txt77dQUYok")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 TRIGGER_TEXT = 'Time to vote'
 
 def get_upcoming_week_dates():
