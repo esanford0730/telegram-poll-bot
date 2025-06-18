@@ -14,6 +14,7 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 PORT = int(os.getenv("PORT", "8000"))
 
+
 def get_next_week_dates():
     today = datetime.utcnow().date()
     days_ahead = (7 - today.weekday()) % 7
@@ -21,6 +22,7 @@ def get_next_week_dates():
         days_ahead = 7
     next_monday = today + timedelta(days=days_ahead)
     return [(next_monday + timedelta(days=i)) for i in range(7)]
+
 
 async def send_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -35,13 +37,16 @@ async def send_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
         allows_multiple_answers=True,
     )
 
+
 async def check_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message and update.message.text:
         if "time to vote for next session" in update.message.text.lower():
             await send_poll(update, context)
 
+
 async def handle_http_request(request):
     return web.Response(text="Bot is running")
+
 
 async def start_web_server():
     app = web.Application()
@@ -51,18 +56,27 @@ async def start_web_server():
     site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
 
+
 def main():
     import logging
     logging.basicConfig(level=logging.INFO)
 
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_trigger))
+
+    async def startup():
+        # Delete webhook if set, to avoid conflict errors on polling
+        await app.bot.delete_webhook()
+
+    app.post_init = startup
+
     loop = asyncio.get_event_loop()
     loop.create_task(start_web_server())
 
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_trigger))
-
     print("Bot started. Listening for messages...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
