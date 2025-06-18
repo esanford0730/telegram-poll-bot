@@ -6,8 +6,8 @@ from aiohttp import web
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
-    MessageHandler,
     ContextTypes,
+    MessageHandler,
     filters,
 )
 
@@ -18,17 +18,16 @@ PORT = int(os.getenv("PORT", "8000"))
 def get_next_week_dates():
     today = datetime.utcnow().date()
     days_ahead = (7 - today.weekday()) % 7
-    if days_ahead == 0:
-        days_ahead = 7
+    days_ahead = 7 if days_ahead == 0 else days_ahead
     next_monday = today + timedelta(days=days_ahead)
-    return [(next_monday + timedelta(days=i)) for i in range(7)]
+    return [next_monday + timedelta(days=i) for i in range(7)]
 
 
 async def send_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     week_dates = get_next_week_dates()
     options = [f"{date.strftime('%A')} {date.month}/{date.day}" for date in week_dates]
-    options.append("FFA")  # 8th choice
+    options.append("FFA")
     await context.bot.send_poll(
         chat_id=chat_id,
         question="When not available for next session?",
@@ -57,20 +56,22 @@ async def start_web_server():
     await site.start()
 
 
+# ✅ This function now accepts the required argument
+async def startup(application):
+    await application.bot.delete_webhook()
+
+
 def main():
     import logging
     logging.basicConfig(level=logging.INFO)
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_trigger))
 
-    async def startup():
-        # Delete webhook if set, to avoid conflict errors on polling
-        await app.bot.delete_webhook()
-
+    # ✅ Correct post_init usage
     app.post_init = startup
 
+    # ✅ Start the background healthcheck server
     loop = asyncio.get_event_loop()
     loop.create_task(start_web_server())
 
