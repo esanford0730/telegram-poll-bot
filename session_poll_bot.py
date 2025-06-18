@@ -25,7 +25,7 @@ def get_next_week_dates():
 async def send_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     week_dates = get_next_week_dates()
-    options = [date.strftime("%A %Y-%m-%d") for date in week_dates]
+    options = [f"{date.strftime('%A')} {date.month}/{date.day}" for date in week_dates]
     options.append("FFA")  # 8th choice
     await context.bot.send_poll(
         chat_id=chat_id,
@@ -37,7 +37,7 @@ async def send_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def check_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message and update.message.text:
-        if "Time to vote for next session" in update.message.text:
+        if "time to vote for next session" in update.message.text.lower():
             await send_poll(update, context)
 
 async def handle_http_request(request):
