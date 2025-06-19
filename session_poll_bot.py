@@ -6,7 +6,7 @@ import subprocess
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, Poll, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") 
+TOKEN = os.getenv("BOT_TOKEN") 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
