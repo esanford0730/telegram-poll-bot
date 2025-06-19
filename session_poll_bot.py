@@ -61,6 +61,12 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_trigger))
 
+    async def startup_cleanup():
+        await app.bot.get_updates(offset=-1)  # Clears pending updates to avoid flooding
+        print("Startup cleanup complete.")
+
+    loop.run_until_complete(startup_cleanup())
+
     print("Bot started. Listening for messages...")
     app.run_polling()
 
