@@ -14,8 +14,8 @@ from telegram.ext import (
 )
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. "https://your-app.onrender.com/webhook"
-PORT = int(os.getenv("PORT", "8000"))
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://your-app.onrender.com/webhook
+PORT = int(os.getenv("PORT", "10000"))  # Render injects this; fallback for local
 
 def get_next_week_dates():
     today = datetime.utcnow().date()
@@ -50,9 +50,6 @@ async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Restarting bot...")
     raise SystemExit()
 
-async def handle_healthcheck(request):
-    return web.Response(text="Webhook bot is alive!")
-
 async def main():
     import logging
     logging.basicConfig(level=logging.INFO)
@@ -64,22 +61,20 @@ async def main():
 
     await app.initialize()
     await app.bot.set_webhook(url=WEBHOOK_URL)
-    await app.start()
-    await app.updater.start_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path="/webhook",
-        webhook_url=WEBHOOK_URL,
-    )
 
-    # Optional: Render healthcheck support
-    runner = web.AppRunner(web.Application())
-    runner.app.add_routes([web.get("/", handle_healthcheck)])
+    # Create your own aiohttp app that will receive Telegram updates
+    aio_app = web.Application()
+    aio_app.router.add_post("/webhook", app.webhook_handler)
+    aio_app.router.add_get("/", lambda request: web.Response(text="Bot is alive"))
+
+    # Start Telegram and aiohttp servers in parallel
+    await app.start()
+    runner = web.AppRunner(aio_app)
     await runner.setup()
     site = web.TCPSite(runner, host="0.0.0.0", port=PORT)
     await site.start()
 
-    print("Bot is running via webhook...")
+    print(f"Webhook set. Bot is running on port {PORT}")
     await app.updater.wait()
 
 if __name__ == "__main__":
