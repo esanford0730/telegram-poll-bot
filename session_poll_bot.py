@@ -1,4 +1,3 @@
-
 import logging
 import os
 import json
@@ -7,7 +6,7 @@ import subprocess
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, Poll, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or "YOUR_TOKEN_HERE"
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,10 +42,8 @@ async def results(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if vote in counts:
             counts[vote] += 1
 
-    result_text = "
-".join([f"{k}: {v}" for k, v in counts.items()])
-    await update.message.reply_text(f"Current Results:
-{result_text}")
+    result_text = "\n".join([f"{k}: {v}" for k, v in counts.items()])
+    await update.message.reply_text(f"Current Results:\n{result_text}")
 
 async def clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_sessions.clear()
