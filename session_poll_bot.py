@@ -68,11 +68,9 @@ def main():
     app.add_handler(CommandHandler("restart", restart))  # optional command
 
     async def startup_cleanup():
-        await app.bot.get_updates(offset=-1)  # Clear pending updates
-        print("Startup cleanup complete.")
+              print("Startup cleanup complete.")
 
-    loop.run_until_complete(startup_cleanup())
-
+    
     print("Bot started. Listening for messages...")
     app.run_polling()
 
