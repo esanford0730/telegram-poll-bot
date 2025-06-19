@@ -9,6 +9,7 @@ from telegram.ext import (
     MessageHandler,
     CommandHandler,
     ContextTypes,
+    Application,
     filters,
 )
 
@@ -56,23 +57,29 @@ async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Restarting bot...")
     raise SystemExit()
 
-def main():
+async def main():
     import logging
     logging.basicConfig(level=logging.INFO)
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(start_web_server())
+    # Start HTTP server for health checks
+    await start_web_server()
 
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    # Build and start bot
+    app: Application = ApplicationBuilder().token(BOT_TOKEN).build()
+
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_trigger))
-    app.add_handler(CommandHandler("restart", restart))  # optional command
+    app.add_handler(CommandHandler("restart", restart))
 
-    async def startup_cleanup():
-              print("Startup cleanup complete.")
+    print("Bot is starting...")
 
-    
-    print("Bot started. Listening for messages...")
-    app.run_polling()
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+
+    # Wait until shutdown signal is received
+    await app.updater.wait()
+    await app.stop()
+    await app.shutdown()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
