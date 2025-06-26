@@ -1,7 +1,8 @@
 import os
 import logging
+import asyncio
 from datetime import datetime, timedelta
-from telegram import Update, Bot
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
@@ -9,29 +10,28 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-import asyncio
 
-# Environment variables
+# Environment
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://yourapp.onrender.com/webhook
 PORT = int(os.getenv("PORT", 10000))
 
-# Logging setup
+# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Utility to get date options for the poll
+# Date logic
 def get_next_week_dates():
     today = datetime.utcnow().date()
     days_ahead = (7 - today.weekday()) % 7 or 7
     next_monday = today + timedelta(days=days_ahead)
     return [next_monday + timedelta(days=i) for i in range(7)]
 
-# /start command handler
+# /start handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Booting up peasant brain BEEP BOOP")
 
-# General message handler
+# Message handler
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
@@ -53,28 +53,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             allows_multiple_answers=True,
         )
 
-# Resets the webhook on startup to ensure it matches WEBHOOK_URL
-async def reset_webhook():
-    bot = Bot(token=BOT_TOKEN)
-    await bot.delete_webhook()
-    await bot.set_webhook(url=WEBHOOK_URL)
-    logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
-
-# Main setup function
-def main():
-    # Reset webhook before running the app
-    asyncio.run(reset_webhook())
-
+# MAIN
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Reset webhook to prevent Telegram conflict
+    async with app.bot:
+        await app.bot.delete_webhook()
+        await app.bot.set_webhook(WEBHOOK_URL)
+        logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
+
+    # Register handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     logger.info("🚀 Starting webhook server...")
-    app.run_webhook(
+    await app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url=WEBHOOK_URL,
     )
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
