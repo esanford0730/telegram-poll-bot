@@ -4,18 +4,16 @@ from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
-    ContextTypes,
     CommandHandler,
     MessageHandler,
+    ContextTypes,
     filters,
 )
 
-# Environment
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # https://your-app-name.onrender.com/webhook
 PORT = int(os.getenv("PORT", 10000))
 
-# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -49,24 +47,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             allows_multiple_answers=True,
         )
 
-async def main():
+def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Clean + set webhook
-    await app.bot.delete_webhook()
-    await app.bot.set_webhook(WEBHOOK_URL)
-    logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
+    # Optional: clear existing webhook before setting a new one
+    async def reset_webhook():
+        await app.bot.delete_webhook()
+        await app.bot.set_webhook(url=WEBHOOK_URL)
+        logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
+
+    import asyncio
+    asyncio.run(reset_webhook())
 
     logger.info("🚀 Starting webhook server...")
-    await app.run_webhook(
+    app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url=WEBHOOK_URL,
     )
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
