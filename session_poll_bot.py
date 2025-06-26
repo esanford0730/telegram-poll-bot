@@ -10,9 +10,9 @@ from telegram.ext import (
     filters,
 )
 
-# Env variables
+# Environment
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://yourapp.onrender.com/webhook
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 10000))
 
 # Logging
@@ -49,29 +49,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             allows_multiple_answers=True,
         )
 
-def main():
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Register handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Reset webhook before launching server
-    async def reset_webhook():
-        async with app.bot:
-            await app.bot.delete_webhook()
-            await app.bot.set_webhook(WEBHOOK_URL)
-            logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
-
-    import asyncio
-    asyncio.run(reset_webhook())
+    # Clean + set webhook
+    await app.bot.delete_webhook()
+    await app.bot.set_webhook(WEBHOOK_URL)
+    logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
 
     logger.info("🚀 Starting webhook server...")
-    app.run_webhook(
+    await app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url=WEBHOOK_URL,
     )
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
