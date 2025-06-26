@@ -51,12 +51,11 @@ async def main():
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
     )
 
-    # Runs aiohttp and binds to the correct port
+    # Use only webhook_url, not webhook_path
     await app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url=WEBHOOK_URL,
-        webhook_path="/webhook",
     )
 
 if __name__ == "__main__":
