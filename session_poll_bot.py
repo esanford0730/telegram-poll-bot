@@ -28,7 +28,7 @@ def get_next_week_dates():
 
 # /start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hi! I'm awake. Say 'are you up son' or 'time to vote for next session'.")
+    await update.message.reply_text("Booting up peasant brain BEEP BOOP")
 
 # General message handler
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
