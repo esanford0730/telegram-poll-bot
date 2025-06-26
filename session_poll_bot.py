@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime, timedelta
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
@@ -9,6 +9,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+import asyncio
 
 # Environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -52,14 +53,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             allows_multiple_answers=True,
         )
 
+# Resets the webhook on startup to ensure it matches WEBHOOK_URL
+async def reset_webhook():
+    bot = Bot(token=BOT_TOKEN)
+    await bot.delete_webhook()
+    await bot.set_webhook(url=WEBHOOK_URL)
+    logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
+
 # Main setup function
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    # Reset webhook before running the app
+    asyncio.run(reset_webhook())
 
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    logger.info("Starting webhook...")
+    logger.info("🚀 Starting webhook server...")
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
