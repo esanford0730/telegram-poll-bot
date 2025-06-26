@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import (
@@ -11,7 +10,7 @@ from telegram.ext import (
     filters,
 )
 
-# Environment
+# Env variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://yourapp.onrender.com/webhook
 PORT = int(os.getenv("PORT", 10000))
@@ -20,18 +19,15 @@ PORT = int(os.getenv("PORT", 10000))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Date logic
 def get_next_week_dates():
     today = datetime.utcnow().date()
     days_ahead = (7 - today.weekday()) % 7 or 7
     next_monday = today + timedelta(days=days_ahead)
     return [next_monday + timedelta(days=i) for i in range(7)]
 
-# /start handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Booting up peasant brain BEEP BOOP")
 
-# Message handler
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
@@ -53,26 +49,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             allows_multiple_answers=True,
         )
 
-# MAIN
-async def main():
+def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    # Reset webhook to prevent Telegram conflict
-    async with app.bot:
-        await app.bot.delete_webhook()
-        await app.bot.set_webhook(WEBHOOK_URL)
-        logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
 
     # Register handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
+    # Reset webhook before launching server
+    async def reset_webhook():
+        async with app.bot:
+            await app.bot.delete_webhook()
+            await app.bot.set_webhook(WEBHOOK_URL)
+            logger.info(f"Webhook has been reset to: {WEBHOOK_URL}")
+
+    import asyncio
+    asyncio.run(reset_webhook())
+
     logger.info("🚀 Starting webhook server...")
-    await app.run_webhook(
+    app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url=WEBHOOK_URL,
     )
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
